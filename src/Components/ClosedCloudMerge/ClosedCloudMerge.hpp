@@ -13,6 +13,7 @@
 #include <pcl/point_cloud.h>
 #include <Types/MergeUtils.hpp>
 #include <Types/PointXYZSIFT.hpp>
+#include <Types/PointXYZSHOT.hpp>
 #include <Types/SIFTObjectModel.hpp>
 #include <Types/SIFTObjectModelFactory.hpp>
 
@@ -74,7 +75,10 @@ protected:
 	Base::DataStreamIn<pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr> in_cloud_xyzrgb_normals;
 
 	/// Input data stream containing feature cloud from a given view.
-	Base::DataStreamIn<pcl::PointCloud<PointXYZSIFT>::Ptr> in_cloud_xyzsift;
+	Base::DataStreamIn<pcl::PointCloud<PointXYZSIFT>::Ptr> in_cloud_xyzsift;  
+
+    /// Input data stream containing feature cloud from a given view.
+    Base::DataStreamIn<pcl::PointCloud<PointXYZSHOT>::Ptr> in_cloud_xyzshot;
 
 	/// Output data stream containing SIFTObjectModel - depricated.
 	Base::DataStreamOut<AbstractObject*> out_instance;
@@ -109,6 +113,7 @@ protected:
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud_merged;
 	pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud_normal_merged;
 	pcl::PointCloud<PointXYZSIFT>::Ptr cloud_sift_merged;
+    pcl::PointCloud<PointXYZSHOT>::Ptr cloud_shot_merged;
 	Eigen::Matrix4f global_trans;
 
 	std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> rgb_views;
@@ -129,6 +134,7 @@ public:
     Base::Property<float> RanSAC_max_iterations;
 
     Base::Property<int> viewNumber, maxIterations, corrTreshold;
+    Base::Property<bool> useSHOT;
 };
 
 REGISTER_COMPONENT("ClosedCloudMerge", Processors::ClosedCloudMerge::ClosedCloudMerge)

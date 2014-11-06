@@ -50,7 +50,8 @@ ClosedCloudMerge::ClosedCloudMerge(const std::string & name) :
     RanSAC_max_iterations("RanSac.Iterations",2000),
     viewNumber("View.Number", 5),
     maxIterations("Interations.Max", 5),
-    corrTreshold("Correspondenc.Treshold", 10)
+    corrTreshold("Correspondenc.Treshold", 10),
+    useSHOT("useSHOT", false)
 {
     registerProperty(prop_ICP_alignment);
     registerProperty(prop_ICP_alignment_normal);
@@ -63,6 +64,7 @@ ClosedCloudMerge::ClosedCloudMerge(const std::string & name) :
     registerProperty(maxIterations);
     registerProperty(viewNumber);
     registerProperty(corrTreshold);
+    registerProperty(useSHOT);
 
 	properties.ICP_transformation_epsilon = ICP_transformation_epsilon;
 	properties.ICP_max_iterations = ICP_max_iterations;
@@ -104,6 +106,7 @@ bool ClosedCloudMerge::onInit() {
 
 	cloud_merged = pcl::PointCloud<pcl::PointXYZRGB>::Ptr (new pcl::PointCloud<pcl::PointXYZRGB>());
 	cloud_sift_merged = pcl::PointCloud<PointXYZSIFT>::Ptr (new pcl::PointCloud<PointXYZSIFT>());
+    cloud_shot_merged = pcl::PointCloud<PointXYZSHOT>::Ptr(new pcl::PointCloud<PointXYZSHOT>());
 	cloud_normal_merged = pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr (new pcl::PointCloud<pcl::PointXYZRGBNormal>());
 	return true;
 }
@@ -128,12 +131,22 @@ void ClosedCloudMerge::addViewToModel()
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloudrgb = in_cloud_xyzrgb.read();
 	pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr cloud = in_cloud_xyzrgb_normals.read();
 	pcl::PointCloud<PointXYZSIFT>::Ptr cloud_sift = in_cloud_xyzsift.read();
+    pcl::PointCloud<PointXYZSHOT>::Ptr cloud_shot;
+    if(useSHOT){
+        if(in_cloud_xyzshot.empty()){
+            CLOG(LERROR) << "ClosedCloudMerge: No XYZSHOT cloud";
+            return;
+        }
+        cloud_shot = in_cloud_xyzshot.read();
+    }
 
 	// TODO if empty()
 
 	CLOG(LINFO) << "cloud_xyzrgb size: "<<cloudrgb->size();
 	CLOG(LINFO) << "cloud_xyzrgb_normals size: "<<cloud->size();
 	CLOG(LINFO) << "cloud_xyzsift size: "<<cloud_sift->size();
+    if(useSHOT)
+        CLOG(LINFO) << "cloud_xyzshot size: "<<cloud_shot->size();
 
 	// Remove NaNs.
 	std::vector<int> indices;
@@ -143,6 +156,10 @@ void ClosedCloudMerge::addViewToModel()
 	pcl::removeNaNFromPointCloud(*cloud, *cloud, indices);
 	cloud_sift->is_dense = false;
 	pcl::removeNaNFromPointCloud(*cloud_sift, *cloud_sift, indices);
+    if(useSHOT){
+        cloud_shot->is_dense = false;
+        pcl::removeNaNFromPointCloud(*cloud_shot, *cloud_shot, indices);
+    }
 
 	CLOG(LDEBUG) << "cloud_xyzrgb size without NaN: "<<cloud->size();
 	CLOG(LDEBUG) << "cloud_xyzsift size without NaN: "<<cloud_sift->size();
@@ -186,6 +203,7 @@ void ClosedCloudMerge::addViewToModel()
 //	 Initialize parameters.
 	pcl::CorrespondencesPtr correspondences(new pcl::Correspondences()) ;
 	MergeUtils::computeCorrespondences(cloud_sift, cloud_sift_merged, correspondences);
+
 
 	CLOG(LINFO) << "  correspondences: " << correspondences->size() ;
     // Compute transformation between clouds and SOMGenerator global transformation of cloud.
