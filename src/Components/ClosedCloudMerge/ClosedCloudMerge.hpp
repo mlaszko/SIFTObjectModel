@@ -89,9 +89,11 @@ protected:
 	/// Output data stream containing object model point cloud with normals.
 	Base::DataStreamOut<pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr> out_cloud_xyzrgb_normals;
 
-
 	/// Output data stream containing object model feature cloud (SIFTs).
 	Base::DataStreamOut<pcl::PointCloud<PointXYZSIFT>::Ptr> out_cloud_xyzsift;
+
+    /// Output data stream containing object model feature cloud (SHOT).
+    Base::DataStreamOut<pcl::PointCloud<PointXYZSHOT>::Ptr> out_cloud_xyzshot;
 
 	// Mean number of features per view.
 	Base::DataStreamOut<int> out_mean_viewpoint_features_number;

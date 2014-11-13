@@ -17,6 +17,7 @@
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include <Types/PointXYZSIFT.hpp>
+#include <Types/PointXYZSHOT.hpp>
 #include <Types/SIFTObjectModel.hpp>
 #include <Types/SIFTObjectModelFactory.hpp>
 
@@ -43,6 +44,8 @@ public:
 
     // Computes the correspondences between two XYZSIFT clouds
     static void computeCorrespondences(const pcl::PointCloud<PointXYZSIFT>::ConstPtr &cloud_src, const pcl::PointCloud<PointXYZSIFT>::ConstPtr &cloud_trg, const pcl::CorrespondencesPtr& correspondence);
+
+    static void computeCorrespondences(const pcl::PointCloud<PointXYZSHOT>::ConstPtr &cloud_src, const pcl::PointCloud<PointXYZSHOT>::ConstPtr &cloud_trg, const pcl::CorrespondencesPtr& correspondence);
 
     /// Computes the transformation between two XYZSIFT clouds basing on the found correspondences.
     static Eigen::Matrix4f computeTransformationSAC(const pcl::PointCloud<PointXYZSIFT>::ConstPtr &cloud_src, const pcl::PointCloud<PointXYZSIFT>::ConstPtr &cloud_trg,

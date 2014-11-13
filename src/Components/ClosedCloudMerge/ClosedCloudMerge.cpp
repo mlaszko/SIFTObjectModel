@@ -82,10 +82,12 @@ void ClosedCloudMerge::prepareInterface() {
 	registerStream("in_cloud_xyzrgb", &in_cloud_xyzrgb);
 	registerStream("in_cloud_xyzrgb_normals", &in_cloud_xyzrgb_normals);
 	registerStream("in_cloud_xyzsift", &in_cloud_xyzsift);
+    registerStream("in_cloud_xyzshot", &in_cloud_xyzshot);
 	registerStream("out_instance", &out_instance);
 	registerStream("out_cloud_xyzrgb", &out_cloud_xyzrgb);
 	registerStream("out_cloud_xyzrgb_normals", &out_cloud_xyzrgb_normals);
 	registerStream("out_cloud_xyzsift", &out_cloud_xyzsift);
+    registerStream("out_cloud_xyzshot", &out_cloud_xyzshot);
 
 	registerStream("out_mean_viewpoint_features_number", &out_mean_viewpoint_features_number);
 
@@ -189,10 +191,14 @@ void ClosedCloudMerge::addViewToModel()
 		*cloud_merged = *cloudrgb;
 		*cloud_normal_merged = *cloud;
 		*cloud_sift_merged = *cloud_sift;
+        if(useSHOT)
+            *cloud_shot_merged = *cloud_shot;
 
 		out_cloud_xyzrgb.write(cloud_merged);
 		out_cloud_xyzrgb_normals.write(cloud_normal_merged);
 		out_cloud_xyzsift.write(cloud_sift_merged);
+        if(useSHOT)
+            out_cloud_xyzshot.write(cloud_shot_merged);
 
 		// Push SOM - depricated.
 //		out_instance.write(produce());
@@ -202,10 +208,20 @@ void ClosedCloudMerge::addViewToModel()
 //	 Find corespondences between feature clouds.
 //	 Initialize parameters.
 	pcl::CorrespondencesPtr correspondences(new pcl::Correspondences()) ;
+    pcl::CorrespondencesPtr correspondences_shot(new pcl::Correspondences()) ;
 	MergeUtils::computeCorrespondences(cloud_sift, cloud_sift_merged, correspondences);
+    CLOG(LINFO) << "  correspondences SIFT: " << correspondences->size() ;
 
+    if(useSHOT){
+        MergeUtils::computeCorrespondences(cloud_shot, cloud_shot_merged, correspondences_shot);
+        CLOG(LINFO) << "  correspondences shot: " << correspondences_shot->size() ;
 
-	CLOG(LINFO) << "  correspondences: " << correspondences->size() ;
+        //można tak dodać jeżeli takie same keypointy
+//TODO musza byc takie same chmury SIFT i SHOT
+        correspondences->insert(correspondences->end(),correspondences_shot->begin(),correspondences_shot->end());
+}
+
+    CLOG(LINFO) << "  correspondences: " << correspondences->size();
     // Compute transformation between clouds and SOMGenerator global transformation of cloud.
 	pcl::Correspondences inliers;
 	Eigen::Matrix4f current_trans = MergeUtils::computeTransformationSAC(cloud_sift, cloud_sift_merged, correspondences, inliers, properties);

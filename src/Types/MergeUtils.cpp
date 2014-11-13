@@ -101,6 +101,28 @@ class SIFTFeatureRepresentation: public pcl::DefaultFeatureRepresentation <Point
 	}
 };
 
+/*
+ * \brief Class used for transformation from SHOT descriptor to array of floats.
+ */
+class SHOTFeatureRepresentation: public pcl::DefaultFeatureRepresentation<PointXYZSHOT> {
+    /// Templatiated number of SIFT descriptor dimensions.
+    using pcl::PointRepresentation<PointXYZSHOT>::nr_dimensions_;
+
+public:
+    SHOTFeatureRepresentation() {
+        // Define the number of dimensions.
+        nr_dimensions_ = 352;
+        trivial_ = false;
+    }
+
+    /// Overrides the copyToFloatArray method to define our feature vector
+    virtual void copyToFloatArray(const PointXYZSHOT &p, float * out) const {
+        for (int i = 0; i < 352; ++i) {
+            out[i] = p.descriptor[i];
+        }
+    }
+};
+
 MergeUtils::MergeUtils() {
 	// TODO Auto-generated constructor stub
 
@@ -122,6 +144,21 @@ void MergeUtils::computeCorrespondences(const pcl::PointCloud<PointXYZSIFT>::Con
 	correst.determineReciprocalCorrespondences(*correspondences) ;
 	//CLOG(LINFO) << "Number of reciprocal correspondences: " << correspondences->size() << " out of " << cloud_src->size() << " features";
 }
+
+void MergeUtils::computeCorrespondences(const pcl::PointCloud<PointXYZSHOT>::ConstPtr &cloud_src, const pcl::PointCloud<PointXYZSHOT>::ConstPtr &cloud_trg, const pcl::CorrespondencesPtr& correspondences)
+{
+    //CLOG(LTRACE) << "MergeUtils::computeSHOTCorrespondences" << std::endl;
+    pcl::registration::CorrespondenceEstimation<PointXYZSHOT, PointXYZSHOT> correst;
+    SHOTFeatureRepresentation::Ptr point_representation(new SHOTFeatureRepresentation());
+    correst.setPointRepresentation(point_representation);
+    correst.setInputSource(cloud_src) ;
+    correst.setInputTarget(cloud_trg) ;
+    // Find correspondences.
+    correst.determineReciprocalCorrespondences(*correspondences) ;
+    //CLOG(LINFO) << "Number of reciprocal correspondences: " << correspondences->size() << " out of " << cloud_src->size() << " features";
+}
+
+
 
 Eigen::Matrix4f MergeUtils::computeTransformationSAC(const pcl::PointCloud<PointXYZSIFT>::ConstPtr &cloud_src, const pcl::PointCloud<PointXYZSIFT>::ConstPtr &cloud_trg,
 		const pcl::CorrespondencesConstPtr& correspondences, pcl::Correspondences& inliers, Properties properties)
