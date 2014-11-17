@@ -141,8 +141,8 @@ void ClosedCloudMerge::addViewToModel()
         }
         cloud_shot = in_cloud_xyzshot.read();
     }
+    pcl::PointCloud<pcl::PointXYZ>::Ptr keypoints(new pcl::PointCloud<pcl::PointXYZ>());  //keypoint SIFT i SHOT
 
-	// TODO if empty()
 
 	CLOG(LINFO) << "cloud_xyzrgb size: "<<cloudrgb->size();
 	CLOG(LINFO) << "cloud_xyzrgb_normals size: "<<cloud->size();
@@ -216,15 +216,38 @@ void ClosedCloudMerge::addViewToModel()
         MergeUtils::computeCorrespondences(cloud_shot, cloud_shot_merged, correspondences_shot);
         CLOG(LINFO) << "  correspondences shot: " << correspondences_shot->size() ;
 
-        //można tak dodać jeżeli takie same keypointy
-//TODO musza byc takie same chmury SIFT i SHOT
-        correspondences->insert(correspondences->end(),correspondences_shot->begin(),correspondences_shot->end());
+        //tworzymy chmure punktow kluczowych SIFT i SHOT (PointXYZ)
+        pcl::PointCloud<pcl::PointXYZ>::Ptr keypoints_shot(new pcl::PointCloud<pcl::PointXYZ>());
+        pcl::copyPointCloud(*cloud_sift, *keypoints);
+        pcl::copyPointCloud(*cloud_shot, *keypoints_shot);
+        *keypoints += *keypoints_shot;  //dopisujemy punkty kluczowe SHOT do SIFT
+
+        //dodajemy dopasowania SHOT do dopasowan SIFT
+        for (int i = 0; i < correspondences_shot->size(); ++i) {
+            pcl::Correspondence old = correspondences_shot->at(i);
+            correspondences->push_back(pcl::Correspondence(old.index_query + correspondences_shot->size(), old.index_match + correspondences_shot->size(), old.distance));
+            //TODO czy distance z SIFT i SHOT rownowazne ?????
+        }
+
+
 }
 
     CLOG(LINFO) << "  correspondences: " << correspondences->size();
     // Compute transformation between clouds and SOMGenerator global transformation of cloud.
 	pcl::Correspondences inliers;
-	Eigen::Matrix4f current_trans = MergeUtils::computeTransformationSAC(cloud_sift, cloud_sift_merged, correspondences, inliers, properties);
+    Eigen::Matrix4f current_trans;
+    if(useSHOT){
+        //transformacja miedzy keypointami sift i shot
+        pcl::PointCloud<pcl::PointXYZ>::Ptr keypoints_merged(new pcl::PointCloud<pcl::PointXYZ>());
+        pcl::PointCloud<pcl::PointXYZ>::Ptr keypoints_shot_merged(new pcl::PointCloud<pcl::PointXYZ>());
+        pcl::copyPointCloud(*cloud_sift_merged, *keypoints_merged);
+        pcl::copyPointCloud(*cloud_shot_merged, *keypoints_shot_merged);
+        *keypoints_merged += *keypoints_shot_merged;
+        current_trans = MergeUtils::computeTransformationSAC(keypoints, keypoints_merged, correspondences, inliers, properties);
+    }
+    else{
+        current_trans = MergeUtils::computeTransformationSAC(cloud_sift, cloud_sift_merged, correspondences, inliers, properties);
+    }
 	if (current_trans == Eigen::Matrix4f::Identity())
 	{
 		CLOG(LINFO) << "cloud couldn't be merged";
@@ -335,6 +358,8 @@ void ClosedCloudMerge::addViewToModel()
 	CLOG(LINFO) << "model cloud_merged->size(): "<< cloud_merged->size();
 	CLOG(LINFO) << "model cloud_normal_merged->size(): "<< cloud_normal_merged->size();
 	CLOG(LINFO) << "model cloud_sift_merged->size(): "<< cloud_sift_merged->size();
+    if(useSHOT)
+        CLOG(LINFO) << "model cloud_shot_merged->size(): "<< cloud_shot_merged->size();
 
 
 	// Compute mean number of features.
@@ -345,6 +370,7 @@ void ClosedCloudMerge::addViewToModel()
 	out_cloud_xyzrgb.write(cloud_merged);
 	out_cloud_xyzrgb_normals.write(cloud_normal_merged);
 	out_cloud_xyzsift.write(cloud_sift_merged);
+    out_cloud_xyzshot.write(cloud_shot_merged);
 }
 
 } // namespace ClosedCloudMerge

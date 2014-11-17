@@ -161,21 +161,39 @@ void MergeUtils::computeCorrespondences(const pcl::PointCloud<PointXYZSHOT>::Con
 
 
 Eigen::Matrix4f MergeUtils::computeTransformationSAC(const pcl::PointCloud<PointXYZSIFT>::ConstPtr &cloud_src, const pcl::PointCloud<PointXYZSIFT>::ConstPtr &cloud_trg,
-		const pcl::CorrespondencesConstPtr& correspondences, pcl::Correspondences& inliers, Properties properties)
+        const pcl::CorrespondencesConstPtr& correspondences, pcl::Correspondences& inliers, Properties properties)
 {
-	//CLOG(LTRACE) << "Computing SAC" << std::endl;
+    //CLOG(LTRACE) << "Computing SAC" << std::endl;
 
-	pcl::registration::CorrespondenceRejectorSampleConsensus<PointXYZSIFT> sac ;
-	sac.setInputSource(cloud_src) ;
-	sac.setInputTarget(cloud_trg) ;
-	sac.setInlierThreshold(properties.RanSAC_inliers_threshold) ; //property RanSAC
-	sac.setMaximumIterations(properties.RanSAC_max_iterations) ; //property RanSAC
-	sac.setInputCorrespondences(correspondences) ;
-	sac.getCorrespondences(inliers) ;
+    pcl::registration::CorrespondenceRejectorSampleConsensus<PointXYZSIFT> sac ;
+    sac.setInputSource(cloud_src) ;
+    sac.setInputTarget(cloud_trg) ;
+    sac.setInlierThreshold(properties.RanSAC_inliers_threshold) ; //property RanSAC
+    sac.setMaximumIterations(properties.RanSAC_max_iterations) ; //property RanSAC
+    sac.setInputCorrespondences(correspondences) ;
+    sac.getCorrespondences(inliers) ;
 
-	//CLOG(LINFO) << "SAC inliers " << inliers.size();
+    //CLOG(LINFO) << "SAC inliers " << inliers.size();
 
-	return sac.getBestTransformation() ;
+    return sac.getBestTransformation() ;
+}
+
+Eigen::Matrix4f MergeUtils::computeTransformationSAC(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &cloud_src, const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &cloud_trg,
+        const pcl::CorrespondencesConstPtr& correspondences, pcl::Correspondences& inliers, Properties properties)
+{
+    //CLOG(LTRACE) << "Computing SAC" << std::endl;
+
+    pcl::registration::CorrespondenceRejectorSampleConsensus<pcl::PointXYZ> sac ;
+    sac.setInputSource(cloud_src) ;
+    sac.setInputTarget(cloud_trg) ;
+    sac.setInlierThreshold(properties.RanSAC_inliers_threshold) ; //property RanSAC
+    sac.setMaximumIterations(properties.RanSAC_max_iterations) ; //property RanSAC
+    sac.setInputCorrespondences(correspondences) ;
+    sac.getCorrespondences(inliers) ;
+
+    //CLOG(LINFO) << "SAC inliers " << inliers.size();
+
+    return sac.getBestTransformation() ;
 }
 
 Eigen::Matrix4f MergeUtils::computeTransformationICP(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_src, const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_trg, Properties properties)

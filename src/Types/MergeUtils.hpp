@@ -49,7 +49,10 @@ public:
 
     /// Computes the transformation between two XYZSIFT clouds basing on the found correspondences.
     static Eigen::Matrix4f computeTransformationSAC(const pcl::PointCloud<PointXYZSIFT>::ConstPtr &cloud_src, const pcl::PointCloud<PointXYZSIFT>::ConstPtr &cloud_trg,
-		const pcl::CorrespondencesConstPtr& correspondences, pcl::Correspondences& inliers, Properties properties);
+        const pcl::CorrespondencesConstPtr& correspondences, pcl::Correspondences& inliers, Properties properties);
+
+    static Eigen::Matrix4f computeTransformationSAC(const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &cloud_src, const pcl::PointCloud<pcl::PointXYZ>::ConstPtr &cloud_trg,
+        const pcl::CorrespondencesConstPtr& correspondences, pcl::Correspondences& inliers, Properties properties);
 
     static Eigen::Matrix4f computeTransformationICP(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_src, const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_trg, Properties properties);
     static Eigen::Matrix4f computeTransformationICPColor(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_src, const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud_trg, Properties properties);
