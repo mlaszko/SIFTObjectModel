@@ -264,6 +264,10 @@ void ClosedCloudMerge::addViewToModel()
 	pcl::transformPointCloud(*cloud, *cloud, current_trans);
 	pcl::transformPointCloud(*cloudrgb, *cloudrgb, current_trans);
 	pcl::transformPointCloud(*cloud_sift, *cloud_sift, current_trans);
+    if(useSHOT){
+        pcl::transformPointCloud(*cloud_shot, *cloud_shot, current_trans);
+    }
+
 
 	CLOG(LINFO) << "current trans: \n" << current_trans;
 
@@ -341,16 +345,20 @@ void ClosedCloudMerge::addViewToModel()
 		}
 	} else {
 		for (int i = 1 ; i < counter; i++)
-		{
+        {//po co milion razy kopiowac??
 			pcl::PointCloud<pcl::PointXYZRGB> tmprgb = *(rgb_views[i]);
 			pcl::PointCloud<pcl::PointXYZRGBNormal> tmp = *(rgbn_views[i]);
 			pcl::transformPointCloud(tmp, tmp, lum_sift.getTransformation (i));
 			pcl::transformPointCloud(tmprgb, tmprgb, lum_sift.getTransformation (i));
 			*cloud_merged += tmprgb;
 			*cloud_normal_merged += tmp;
+
 		}
 		CLOG(LINFO) << "cloud added ";
 		cloud_sift_merged = lum_sift.getConcatenatedCloud ();
+        if(useSHOT){
+            *cloud_shot_merged += *cloud_shot;
+        }
 	}
 
 		//*cloud_sift_merged += *cloud_sift;
@@ -371,6 +379,8 @@ void ClosedCloudMerge::addViewToModel()
 	out_cloud_xyzrgb_normals.write(cloud_normal_merged);
 	out_cloud_xyzsift.write(cloud_sift_merged);
     out_cloud_xyzshot.write(cloud_shot_merged);
+
+    CLOG(LINFO) << "ClosedCloudMerge::addViewToModel END.";
 }
 
 } // namespace ClosedCloudMerge
