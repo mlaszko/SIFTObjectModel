@@ -120,7 +120,10 @@ protected:
 
 	std::vector<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> rgb_views;
 	std::vector<pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr> rgbn_views;
+    std::vector<pcl::PointCloud<PointXYZSIFT>::Ptr> sift_views;
+    std::vector<pcl::PointCloud<PointXYZSHOT>::Ptr> shot_views;
     pcl::registration::LUM<PointXYZSIFT> lum_sift;
+    pcl::registration::LUM<pcl::PointXYZ> lum_xyz;
 
 
 public:
