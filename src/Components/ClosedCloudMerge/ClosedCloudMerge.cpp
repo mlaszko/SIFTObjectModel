@@ -173,7 +173,9 @@ void ClosedCloudMerge::addViewToModel()
 
 	rgb_views.push_back(pcl::PointCloud<pcl::PointXYZRGB>::Ptr (new pcl::PointCloud<pcl::PointXYZRGB>()));
 	rgbn_views.push_back(pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr (new pcl::PointCloud<pcl::PointXYZRGBNormal>()));
-	
+    sift_views.push_back(pcl::PointCloud<PointXYZSIFT>::Ptr (new pcl::PointCloud<PointXYZSIFT>()));
+    if(useSHOT)
+        shot_views.push_back(pcl::PointCloud<PointXYZSHOT>::Ptr (new pcl::PointCloud<PointXYZSHOT>()));
 
 	// First cloud.
 	if (counter == 1)
@@ -309,8 +311,8 @@ void ClosedCloudMerge::addViewToModel()
             //dodajemy dopasowania SHOT do dopasowan SIFT
             for (int j = 0; j < correspondences2_shot->size(); ++j) {
                 pcl::Correspondence old = correspondences2_shot->at(j);
-                correspondences2->push_back(pcl::Correspondence(old.index_query + sift_views[counter - 1]->size(), old.index_match + sift_views[i]->size(), old.distance));
-                //TODO czy distance z SIFT i SHOT rownowazne ?????
+                correspondences2->push_back(pcl::Correspondence(old.index_query + sift_views[counter - 1]->size(), old.index_match + sift_views[i]->size(), old.distance/(float)70000));
+                //TODO sprawdzic skad 70000
             }
             pcl::CorrespondencesPtr correspondences3(new pcl::Correspondences()) ;
             MergeUtils::computeTransformationSAC(lum_xyz.getPointCloud(counter - 1), lum_xyz.getPointCloud(i), correspondences2, *correspondences3, properties) ;
@@ -340,8 +342,8 @@ void ClosedCloudMerge::addViewToModel()
 		CLOG(LINFO) << " Non corespondences found" <<endl;
 
 
-	*cloud_merged = *(rgb_views[0]);
-	*cloud_normal_merged = *(rgbn_views[0]);
+//	*cloud_merged = *(rgb_views[0]);
+//	*cloud_normal_merged = *(rgbn_views[0]);
 
 	if (counter > viewNumber) {
         if(useSHOT){
@@ -390,27 +392,42 @@ void ClosedCloudMerge::addViewToModel()
                     ++pt_iter;
                 }
             }
+            if(useSHOT){
+                pcl::PointCloud<PointXYZSHOT>::iterator pt_iter = cloud_shot_merged->begin();
+                while(pt_iter!=cloud_shot_merged->end()){
+                    if(pt_iter->multiplicity==-1){
+                        pt_iter = cloud_shot_merged->erase(pt_iter);
+                    } else {
+                        ++pt_iter;
+                    }
+                }
+            }
         }
 	} else {
-		for (int i = 1 ; i < counter; i++)
-        {//po co milion razy kopiowac?? //TODO
-			pcl::PointCloud<pcl::PointXYZRGB> tmprgb = *(rgb_views[i]);
-			pcl::PointCloud<pcl::PointXYZRGBNormal> tmp = *(rgbn_views[i]);
-			pcl::transformPointCloud(tmp, tmp, lum_sift.getTransformation (i));
-			pcl::transformPointCloud(tmprgb, tmprgb, lum_sift.getTransformation (i));
-			*cloud_merged += tmprgb;
-			*cloud_normal_merged += tmp;
+//		for (int i = 1 ; i < counter; i++)
+//        {//po co milion razy kopiowac?? //TODO
+//			pcl::PointCloud<pcl::PointXYZRGB> tmprgb = *(rgb_views[i]);
+//			pcl::PointCloud<pcl::PointXYZRGBNormal> tmp = *(rgbn_views[i]);
+//			pcl::transformPointCloud(tmp, tmp, lum_sift.getTransformation (i));
+//			pcl::transformPointCloud(tmprgb, tmprgb, lum_sift.getTransformation (i));
+//			*cloud_merged += tmprgb;
+//			*cloud_normal_merged += tmp;
 
-		}
+//		}
 		CLOG(LINFO) << "cloud added ";
-		cloud_sift_merged = lum_sift.getConcatenatedCloud ();
+
+        *cloud_merged += *cloudrgb;
+        *cloud_normal_merged += *cloud;
+
         if(useSHOT){
-            *cloud_shot_merged += *cloud_shot;
+            *cloud_sift_merged += *cloud_sift;
+            *cloud_shot_merged += *cloud_shot;           
+        }
+        else{
+            cloud_sift_merged = lum_sift.getConcatenatedCloud ();
         }
 	}
 
-		//*cloud_sift_merged += *cloud_sift;
-//
 	CLOG(LINFO) << "model cloud_merged->size(): "<< cloud_merged->size();
 	CLOG(LINFO) << "model cloud_normal_merged->size(): "<< cloud_normal_merged->size();
 	CLOG(LINFO) << "model cloud_sift_merged->size(): "<< cloud_sift_merged->size();
