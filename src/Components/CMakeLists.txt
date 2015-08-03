@@ -54,3 +54,5 @@ ADD_COMPONENT(GlobalHypothesesVerification)
 
 ADD_COMPONENT(ReprojectionError)
 
+
+ADD_COMPONENT(HomogMatrixVector)
