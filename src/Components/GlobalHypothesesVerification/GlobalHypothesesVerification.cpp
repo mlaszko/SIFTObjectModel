@@ -28,7 +28,7 @@ GlobalHypothesesVerification::GlobalHypothesesVerification(const std::string & n
 	registerProperty(radius_clutter);
 	registerProperty(regularizer);
 	registerProperty(clutter_regularizer);
-	registerProperty(detect_clutter);
+    registerProperty(detect_clutter);
 
 }
 
@@ -46,6 +46,7 @@ void GlobalHypothesesVerification::prepareInterface() {
     registerStream("in_aligned_hypotheses_xyz", &in_aligned_hypotheses_xyz);
     registerStream("in_cloud_xyz_scene", &in_cloud_xyz_scene);
     registerStream("out_verified_hypotheses_xyz", &out_verified_hypotheses_xyz);
+    registerStream("in_cluster_labels", &in_cluster_labels);
     // Register handlers
     registerHandler("verify_xyzsift", boost::bind(&GlobalHypothesesVerification::verify_xyzsift, this));
     addDependency("verify_xyzsift", &in_aligned_hypotheses_xyzsift);
@@ -191,6 +192,15 @@ void GlobalHypothesesVerification::verify_xyzrgb() {
             return;
     }
 
+    std::vector<std::string> labels;
+    if(!in_cluster_labels.empty()){
+        labels =  in_cluster_labels.read();
+        if(labels.size() != aligned_hypotheses.size()){
+            CLOG(LERROR) << "Wrong labels vector size";
+            labels.clear();
+        }
+    }
+
     pcl::GlobalHypothesesVerification<pcl::PointXYZRGB, pcl::PointXYZRGB> go;
     go.setResolution (resolution);
     go.setInlierThreshold (inlier_threshold);
@@ -211,10 +221,19 @@ void GlobalHypothesesVerification::verify_xyzrgb() {
     for(int i = 0; i < mask_hv.size(); i++){
         if(mask_hv[i]){
             verified_hypotheses.push_back(aligned_hypotheses[i]);
-            CLOG(LINFO) << "GlobalHypothesesVerification: Hypothese " << i << " is CORRECT";
+            string label = "";
+            if(!labels.empty()){
+                label = labels[i];
+            }
+            CLOG(LINFO) << "GlobalHypothesesVerification: Hypothese " << i << " is CORRECT " << label;
+
         }
         else{
-            CLOG(LINFO) << "GlobalHypothesesVerification: Hypothese " << i << " is NOT correct";
+            string label = "";
+            if(!labels.empty()){
+                label = labels[i];
+            }
+            CLOG(LINFO) << "GlobalHypothesesVerification: Hypothese " << i << " is NOT correct " << label;
         }
 
     }

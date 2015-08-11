@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Task>
+	<!-- reference task information -->
+	<Reference>
+		<Author>
+                        <name>Tomasz Kornuta</name>
+			<link></link>
+		</Author>
+		
+		<Description>
+                        <brief>Test for displaying scene along with models with grouped correspondences</brief>
+                        <full>PCL viewer displaying scene loaded from RGB-D images along with SOMs (SIFT Object Models) loaded from JSON files, matched against the scene and grouped into subsets.</full>
+		</Description>
+	</Reference>
+	
+<!--------------------------------------------------------------------------------------------------------------------->
+<!--------------------------------------------------------------------------------------------------------------------->
+<!-- task definition -->
+<!--------------------------------------------------------------------------------------------------------------------->
+<!--------------------------------------------------------------------------------------------------------------------->
+        <Subtasks>
+		<Subtask name="Processing">
+                        <Executor name="Exec1"  period="1">
+<!--------------------------------------------------------------------------------------------------------------------->
+<!--                                     Sources
+<!--------------------------------------------------------------------------------------------------------------------->
+
+                            <!--Scene-->
+                            <Component name="CameraInfo" type="CvCoreTypes:CameraInfoProvider" priority="1" bump="0">
+                                <param name="width">640</param>
+                                <param name="height">480</param>
+                                <param name="camera_matrix">525 0 319.5; 0 525 239.5; 0 0 1</param>
+                                <param name="dist_coeffs">0.18126525 -0.39866885 0.00000000 0.00000000 0.00000000</param>
+                            </Component>
+
+                            <Component name="NextImageTrigger" type="CvBasic:Trigger" priority="2" bump="0">
+                                <param name="auto_trigger">0</param>
+                            </Component>
+
+                            <Component name="RGBSequence" type="CvBasic:Sequence" priority="3" bump="0">
+                                <param name="sequence.directory">/home/mlaszkow/DCL/ecovi/data/3herbaty</param>
+                                <param name="sequence.pattern">.*_rgb.png</param>
+                                <param name="mode.loop">1</param>
+                                <param name="mode.auto_next_image">0</param>
+                            </Component>
+
+                            <Component name="DepthSequence" type="CvBasic:Sequence" priority="4" bump="0">
+                                <param name="sequence.directory">/home/mlaszkow/DCL/ecovi/data/3herbaty</param>
+                                <param name="sequence.pattern">.*_depth.png</param>
+                                <param name="mode.loop">1</param>
+                                <param name="mode.auto_next_image">0</param>
+                            </Component>
+
+                            <!--Models-->
+                            <Component name="SOMJSONReader" type="SIFTObjectModel:SOMJSONReader" priority="10" bump="0">
+                                    <param name="filenames">/home/mlaszkow/DCL/TexturedSolidGeneration/data/dilmah_lemon1.json;/home/mlaszkow/DCL/TexturedSolidGeneration/data/loyd_zielona_biala1.json;/home/mlaszkow/DCL/TexturedSolidGeneration/data/lipton_earl_grey_lemon1.json</param>
+                            </Component>
+
+                            <!--Processing-->
+                            <Component name="SIFT" type="CvBasic:CvSIFT" priority="20" bump="0">
+                            </Component>
+
+                            <Component name="Converter" type="PCL:DepthConverter" priority="21" bump="0">
+                            </Component>
+
+                            <Component name="FeatureCloudConverter" type="SIFTObjectModel:FeatureCloudConverter" priority="22" bump="0">
+                            </Component>
+
+                            <!--------------------------------------------------------------------------------------------------------------------->
+                            <!--                              Correspondences
+                            <!--------------------------------------------------------------------------------------------------------------------->
+
+                            <Component name="CorrespondenceEstimation" type="Registration:CorrespondenceEstimation" priority="30" bump="0">
+                                <param name="rejection.use">0</param>
+                                <param name="rejection.max_distance">0.01</param>
+                            </Component>
+
+                            <Component name="CorrespondenceGrouping" type="SORecognition:CorrespondenceGrouping" priority="31" bump="0">
+                            </Component>
+
+                            <Component name="CloudTransformer" type="PCL:CloudTransformer" priority="32" bump="0">
+                            </Component>
+
+                            <!-- Verification -->
+                            <Component bump="1" name="Projection" priority="51" type="SIFTObjectModel:Projection">
+                                    <param name="use_icp">0</param>
+                            </Component>
+                            <Component bump="0" name="ProjectionSIFT" priority="52" type="SIFTObjectModel:Projection">
+                                    <param name="use_icp">0</param>
+                            </Component>
+
+                            <Component bump="1" name="GreedyVerification" priority="53" type="SIFTObjectModel:GreedyVerification">
+                                    <param name="resolution">0.005f</param>
+                                    <param name="inlier_treshold">0.005f</param>
+                            </Component>
+                            <Component bump="1" name="ConflictGraph" priority="54" type="SIFTObjectModel:ConflictGraph">
+                                    <param name="resolution">0.005f</param>
+                                    <param name="inlier_treshold">0.005f</param>
+                                    <param name="support_threshold">0.08f</param>
+                                    <param name="penalty_threshold">0.05f</param>
+                                    <param name="conflict_threshold">0.02f</param>
+                            </Component>
+                            <Component bump="1" name="GlobalHypothesesVerification" priority="55" type="SIFTObjectModel:GlobalHypothesesVerification">
+                                    <param name="resolution">0.005f</param>
+                                    <param name="inlier_treshold">0.005f</param>
+                                    <param name="radius_clutter">0.04f</param>
+                                    <param name="regularizer">3.f</param>
+                                    <param name="clutter_regularizer">5.f</param>
+                            </Component>
+
+                        </Executor>
+		</Subtask>
+
+<!--------------------------------------------------------------------------------------------------------------------->
+<!--                              Visualization and saving
+<!--------------------------------------------------------------------------------------------------------------------->
+
+		<Subtask name="Visualisation">
+                        <Executor name="Exec2" period="0.2">
+                                <Component name="Viewer" type="PCL:CloudViewer" priority="100" bump="0">
+                                    <param name="scene.display_coordinate_system">false</param>
+                                    <param name="coordinate_system_scale">0.01</param>
+				</Component>
+			</Executor>
+		</Subtask>
+	
+	</Subtasks>
+	
+<!--------------------------------------------------------------------------------------------------------------------->
+<!--------------------------------------------------------------------------------------------------------------------->
+<!-- pipes connecting datastreams -->
+<!--------------------------------------------------------------------------------------------------------------------->
+<!--------------------------------------------------------------------------------------------------------------------->
+        <DataStreams>
+<!--------------------------------------------------------------------------------------------------------------------->
+<!--                                     Sources
+<!--------------------------------------------------------------------------------------------------------------------->
+
+                <!--Scene-->
+                <Source name="CameraInfo.out_camera_info">
+                        <sink>Converter.in_camera_info</sink>
+                        <sink>FeatureCloudConverter.in_camera_info</sink>
+                </Source>
+
+                <Source name="NextImageTrigger.out_trigger">
+                        <sink>RGBSequence.in_next_image_trigger</sink>
+                        <sink>DepthSequence.in_next_image_trigger</sink>
+                </Source>
+
+                <Source name="RGBSequence.out_img">
+                        <sink>SIFT.in_img</sink>
+                        <sink>Converter.in_color</sink>
+                </Source>
+
+                <Source name="DepthSequence.out_img">
+                        <sink>Converter.in_depth</sink> <!--_xyz-->
+                        <sink>FeatureCloudConverter.in_depth</sink>
+                </Source>
+
+                <!--Proccesing-->
+                <Source name="SIFT.out_descriptors">
+                        <sink>FeatureCloudConverter.in_descriptors</sink>
+                </Source>
+
+                <Source name="SIFT.out_features">
+                        <sink>FeatureCloudConverter.in_features</sink>
+                </Source>
+
+                <Source name="Converter.out_cloud_xyzrgb">
+                        <sink>Viewer.in_scene_cloud_xyzrgb</sink>
+                        <sink>CorrespondenceGrouping.in_scene_cloud_xyzrgb</sink>
+                        <sink>Projection.in_cloud_xyzrgb_scene</sink>
+                </Source>
+
+                <Source name="FeatureCloudConverter.out_cloud_xyzsift">
+                        <sink>Viewer.in_scene_cloud_xyzsift</sink>
+                        <sink>CorrespondenceEstimation.in_scene_cloud_xyzsift</sink><!---->
+                        <sink>CorrespondenceGrouping.in_scene_cloud_xyzsift</sink>
+                        <sink>ProjectionSIFT.in_cloud_xyzsift_scene</sink>
+                </Source>
+
+                <!--Model load-->
+
+                <Source name="SOMJSONReader.out_model_clouds_xyzrgb">
+                        <sink>CorrespondenceGrouping.in_model_clouds_xyzrgb</sink>
+                </Source>
+
+                <Source name="SOMJSONReader.out_model_clouds_xyzsift">
+                        <sink>CorrespondenceEstimation.in_model_clouds_xyzsift</sink><!---->
+                        <sink>CorrespondenceGrouping.in_model_clouds_xyzsift</sink>
+                </Source>
+
+                <Source name="SOMJSONReader.out_model_corners_xyz">
+                        <sink>CorrespondenceGrouping.in_model_corners_xyz</sink>
+                </Source>
+
+                <Source name="SOMJSONReader.out_model_labels">
+                        <sink>CorrespondenceGrouping.in_model_labels</sink>
+                </Source>
+
+
+                <Source name="CorrespondenceEstimation.out_models_scene_correspondences">
+                        <sink>CorrespondenceGrouping.in_models_scene_correspondences</sink>
+                </Source> <!---->
+
+
+                <!--Correspondence grouping outputs-->
+
+
+                <Source name="CorrespondenceGrouping.out_cluster_clouds_xyzrgb">
+                        <sink>Projection.in_model_clouds_xyzrgb</sink>
+                </Source>
+
+                <Source name="CorrespondenceGrouping.out_cluster_clouds_xyzsift">
+                        <sink>ProjectionSIFT.in_model_clouds_xyzsift</sink>
+                </Source>
+
+                <Source name="CorrespondenceGrouping.out_cluster_corners_xyz">
+                        <sink>CloudTransformer.in_clouds_xyz</sink>
+                </Source>
+
+                <Source name="CorrespondenceGrouping.out_cluster_poses">
+                        <sink>Projection.in_poses</sink>
+                        <sink>ProjectionSIFT.in_poses</sink>
+                        <sink>CloudTransformer.in_hms</sink>
+                        <sink>Viewer.in_object_poses</sink>
+                </Source>
+
+
+                <Source name="CorrespondenceGrouping.out_cluster_labels">
+                        <sink>Viewer.in_object_labels</sink>
+                        <sink>GreedyVerification.in_cluster_labels</sink>
+                        <sink>ConflictGraph.in_cluster_labels</sink>
+                        <sink>GlobalHypothesesVerification.in_cluster_labels</sink>
+                </Source>
+
+                <Source name="CorrespondenceGrouping.out_clusters_scene_correspondences">
+                        <sink>Viewer.in_objects_scene_correspondences</sink>
+                </Source>
+
+
+                <!-- Projection -->
+                <Source name="CloudTransformer.out_clouds_xyz">
+                        <sink>Viewer.in_object_corners_xyz</sink>
+                </Source>
+
+                <Source name="Projection.out_registered_instances_xyzrgb">
+                        <sink>GreedyVerification.in_aligned_hypotheses_xyzrgb</sink>
+                        <sink>ConflictGraph.in_aligned_hypotheses_xyzrgb</sink>
+                        <sink>GlobalHypothesesVerification.in_aligned_hypotheses_xyzrgb</sink>
+                        <sink>Viewer.in_object_clouds_xyzrgb</sink>
+                </Source>
+
+                <Source name="ProjectionSIFT.out_registered_instances_xyzsift">
+                        <sink>Viewer.in_object_clouds_xyzsift</sink>
+                </Source>
+
+                <Source name="Projection.out_parts_of_scene_xyzrgb">
+                        <sink>GreedyVerification.in_cloud_xyzrgb_scene</sink>
+                        <sink>ConflictGraph.in_cloud_xyzrgb_scene</sink>
+                        <sink>GlobalHypothesesVerification.in_cloud_xyzrgb_scene</sink>
+                </Source>
+
+       </DataStreams>
+</Task>
+

@@ -40,6 +40,7 @@ void GreedyVerification::prepareInterface() {
     registerStream("in_aligned_hypotheses_xyz", &in_aligned_hypotheses_xyz);
     registerStream("in_cloud_xyz_scene", &in_cloud_xyz_scene);
     registerStream("out_verified_hypotheses_xyz", &out_verified_hypotheses_xyz);
+    registerStream("in_cluster_labels", &in_cluster_labels);
 
 	// Register handlers
     registerHandler("verify_xyzsift", boost::bind(&GreedyVerification::verify_xyzsift, this));
@@ -164,6 +165,15 @@ void GreedyVerification::verify_xyzrgb() {
         return;
     }
 
+    std::vector<std::string> labels;
+    if(!in_cluster_labels.empty()){
+        labels =  in_cluster_labels.read();
+        if(labels.size() != aligned_hypotheses.size()){
+            CLOG(LERROR) << "Wrong labels vector size";
+            labels.clear();
+        }
+    }
+
     pcl::GreedyVerification<pcl::PointXYZRGB, pcl::PointXYZRGB> greedy_hv(lambda);
     greedy_hv.setResolution (resolution);
     greedy_hv.setInlierThreshold (inlier_treshold);
@@ -180,10 +190,19 @@ void GreedyVerification::verify_xyzrgb() {
     for(int i = 0; i < mask_hv.size(); i++){
         if(mask_hv[i]){
             verified_hypotheses.push_back(aligned_hypotheses[i]);
-            CLOG(LINFO) << "GreedyVerification: Hypothese " << i << " is CORRECT";
+            string label = "";
+            if(!labels.empty()){
+                label = labels[i];
+            }
+            CLOG(LINFO) << "GreedyVerification: Hypothese " << i << " is CORRECT " << label;
+
         }
         else{
-            CLOG(LINFO) << "GreedyVerification: Hypothese " << i << " is NOT correct";
+            string label = "";
+            if(!labels.empty()){
+                label = labels[i];
+            }
+            CLOG(LINFO) << "GreedyVerification: Hypothese " << i << " is NOT correct " << label;
         }
 
     }

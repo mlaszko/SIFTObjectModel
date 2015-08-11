@@ -74,6 +74,8 @@ protected:
     Base::DataStreamIn<pcl::PointCloud<pcl::PointXYZRGB>::Ptr> in_cloud_xyzrgb_scene;
     Base::DataStreamIn<std::vector<pcl::PointCloud<pcl::PointXYZ>::ConstPtr> > in_aligned_hypotheses_xyz;
     Base::DataStreamIn<pcl::PointCloud<pcl::PointXYZ>::Ptr> in_cloud_xyz_scene;
+    /// Input data stream containing vector of clusters (matched models) labels.
+    Base::DataStreamIn <std::vector< std::string>, Base::DataStreamBuffer::Newest, Base::Synchronization::Mutex> in_cluster_labels;
 	// Output data streams
     Base::DataStreamOut<std::vector<pcl::PointCloud<PointXYZSIFT>::ConstPtr> > out_verified_hypotheses_xyzsift;
     Base::DataStreamOut<std::vector<pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr> > out_verified_hypotheses_xyzrgb;
